@@ -8,8 +8,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       packages: write
+      security-events: write  # Απαραίτητο για το ανέβασμα του SARIF
 
     steps:
       - name: Checkout code
@@ -40,4 +41,22 @@ jobs:
         with:
           command: quickview, cves
           image: ghcr.io/${{ github.repository }}:latest
- 
+          sarif-file: sca_scout.sarif
+          output: sbom_scout.spdx.json
+          format: spdx
+          exit-code: false
+
+      - name: Upload SBOM and SARIF artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-reports
+          path: |
+            sbom_scout.spdx.json
+            sca_scout.sarif
+
+      # Προαιρετικό: Ανεβάζει το SARIF στο Security Tab του GitHub (αν το repo είναι δημόσιο)
+      - name: Upload SARIF to GitHub Security Tab
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: sca_scout.sarif
+          category: Docker-Scout
